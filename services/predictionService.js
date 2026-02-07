@@ -1,0 +1,25 @@
+exports.calculateMLPrediction = async (inputData = null) => {
+  if (!inputData || Object.keys(inputData).length === 0) {
+    const now = new Date();
+    inputData = {
+      dayOfWeek: now.getDay(),
+      month: now.getMonth() + 1,
+      isFestival: 0,
+      temperature: 30,
+      rainfall: 0
+    };
+  }
+
+  const result = await predictAccidentLoad(inputData);
+
+  let alertLevel = "LOW";
+  if (result.prediction > 25) alertLevel = "CRITICAL";
+  else if (result.prediction > 15) alertLevel = "HIGH";
+  else if (result.prediction > 8) alertLevel = "MEDIUM";
+
+  return {
+    input: inputData,
+    predictedAccidents: result.prediction,
+    alertLevel
+  };
+};

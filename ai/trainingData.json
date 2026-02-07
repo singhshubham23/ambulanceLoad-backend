@@ -1,0 +1,34 @@
+[
+  {
+    "dayOfWeek": 4,
+    "month": 2,
+    "isFestival": 0,
+    "temperature": 30,
+    "rainfall": 0,
+    "accidents": 1
+  },
+  {
+    "dayOfWeek": 4,
+    "month": 2,
+    "isFestival": 0,
+    "temperature": 30,
+    "rainfall": 0,
+    "accidents": 1
+  },
+  {
+    "dayOfWeek": 4,
+    "month": 2,
+    "isFestival": 0,
+    "temperature": 30,
+    "rainfall": 0,
+    "accidents": 1
+  },
+  {
+    "dayOfWeek": 6,
+    "month": 2,
+    "isFestival": 0,
+    "temperature": 30,
+    "rainfall": 0,
+    "accidents": 1
+  }
+]
