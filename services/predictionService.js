@@ -10,6 +10,13 @@ exports.calculateMLPrediction = async (inputData = null) => {
     };
   }
 
+  if (
+    typeof inputData.dayOfWeek !== "number" ||
+    typeof inputData.month !== "number"
+  ) {
+    throw new Error("Invalid input format");
+  }
+
   const result = await predictAccidentLoad(inputData);
 
   let alertLevel = "LOW";

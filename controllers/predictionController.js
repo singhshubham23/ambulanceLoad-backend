@@ -1,21 +1,23 @@
 const predictionService = require("../services/predictionService");
+const alertService = require("../services/alertService");
 
 exports.getEmergencyPrediction = async (req, res) => {
   try {
     const inputData = req.body;
-    const ruleBased = await predictionService.calculateRuleBasedPrediction(inputData);
+
     const mlBased = await predictionService.calculateMLPrediction(inputData);
 
+    const alert = alertService.evaluateAlert(
+      mlBased.predictedAccidents,
+      mlBased.alertLevel
+    );
+
     res.json({
-      ruleBased,
-      mlBased
+      mlBased,
+      alert
     });
 
   } catch (err) {
-     console.error("FULL ERROR:", err);
-  res.status(500).json({ 
-    message: "Prediction failed",
-    error: err.message 
-  });
+    res.status(500).json({ message: "Prediction failed" });
   }
 };

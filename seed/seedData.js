@@ -23,26 +23,38 @@ const seed = async () => {
     const hospitals = await Hospital.insertMany([
       { name: "City Hospital", zone: "North", capacity: 120 },
       { name: "Metro Hospital", zone: "South", capacity: 80 },
-      { name: "Govt Medical College", zone: "Central", capacity: 200 }
+      { name: "Govt Medical College", zone: "Central", capacity: 200 },
     ]);
 
     await Accident.insertMany([
-      { location: { lat: 28.61, lng: 77.21 }, severity: 4 },
-      { location: { lat: 28.62, lng: 77.20 }, severity: 3 },
-      { location: { lat: 28.63, lng: 77.19 }, severity: 5 }
+      {
+        location: {
+          type: "Point",
+          coordinates: [77.21, 28.61],
+        },
+        severity: 4,
+        zone: "North",
+      },
+      {
+        location: {
+          type: "Point",
+          coordinates: [77.2, 28.62],
+        },
+        severity: 3,
+        zone: "South",
+      },
     ]);
-
     await AmbulanceLog.insertMany([
       { hospital: hospitals[0]._id, zone: "North", arrivalTime: new Date() },
       { hospital: hospitals[1]._id, zone: "South", arrivalTime: new Date() },
-      { hospital: hospitals[0]._id, zone: "North", arrivalTime: new Date() }
+      { hospital: hospitals[0]._id, zone: "North", arrivalTime: new Date() },
     ]);
 
     await Festival.create({
       name: "Diwali",
       startDate: new Date(Date.now() - 86400000),
       endDate: new Date(Date.now() + 86400000),
-      riskMultiplier: 1.5
+      riskMultiplier: 1.5,
     });
 
     console.log("Dummy data seeded successfully");

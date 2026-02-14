@@ -6,36 +6,43 @@ const accidentSchema = new mongoose.Schema({
       type: String,
       enum: ["Point"],
       default: "Point",
-      required: true
+      required: true,
     },
     coordinates: {
-      type: [Number], // [lng, lat]
-      required: true
-    }
+      type: [Number],
+      required: true,
+    },
+  },
+
+  city: {
+    type: String,
+    required: true,
   },
 
   severity: {
     type: Number,
     min: 1,
     max: 5,
-    required: true
+    required: true,
   },
 
   zone: {
     type: String,
-    required: true
+    required: true,
   },
 
   hospital: {
-    type: String
+    type: String,
   },
 
   date: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 accidentSchema.index({ location: "2dsphere" });
+accidentSchema.index({ date: -1 });
+accidentSchema.index({ zone: 1 });
 
 module.exports = mongoose.model("Accident", accidentSchema);

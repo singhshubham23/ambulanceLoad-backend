@@ -10,16 +10,31 @@ mongoose.connect(process.env.MONGO_URI);
 
 async function exportAndTrain() {
   try {
-    const accidents = await Accident.find();
+    const accidents = await Accident.aggregate([
+  {
+    $group: {
+      _id: {
+        year: { $year: "$date" },
+        month: { $month: "$date" },
+        day: { $dayOfMonth: "$date" }
+      },
+      count: { $sum: 1 }
+    }
+  }
+]);
 
-    const trainingData = accidents.map(a => ({
-      dayOfWeek: new Date(a.date).getDay(),
-      month: new Date(a.date).getMonth() + 1,
-      isFestival: 0,          // extend later
-      temperature: 30,        // from weather history later
-      rainfall: 0,
-      accidents: 1
-    }));
+const trainingData = accidents.map(a => {
+  const date = new Date(a._id.year, a._id.month - 1, a._id.day);
+
+  return {
+    dayOfWeek: date.getDay(),
+    month: date.getMonth() + 1,
+    isFestival: 0,
+    temperature: 30,
+    rainfall: 0,
+    accidents: a.count
+  };
+});
 
     const dataPath = path.join(__dirname, "ai", "trainingData.json");
 
@@ -35,7 +50,6 @@ async function exportAndTrain() {
       console.log(stdout);
       process.exit();
     });
-
   } catch (err) {
     console.error("Export failed:", err);
   }

@@ -1,83 +1,42 @@
-const AmbulanceLog = require("../models/AmbulanceLog");
-const Accident = require("../models/Accident");
+const zoneService = require("../services/zoneService");
 
 exports.getZoneDensity = async (req, res) => {
   try {
-    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const { city, hours } = req.query;
 
-    const zoneData = await AmbulanceLog.aggregate([
-      {
-        $match: {
-          arrivalTime: { $gte: last24h }
-        }
-      },
-      {
-        $group: {
-          _id: "$zone",
-          ambulanceCount: { $sum: 1 }
-        }
-      }
-    ]);
+    if (!city) {
+      return res.status(400).json({
+        message: "City query parameter is required"
+      });
+    }
 
-    const accidentData = await Accident.aggregate([
-      {
-        $match: {
-          date: { $gte: last24h }
-        }
-      },
-      {
-        $group: {
-          _id: "$zone",
-          accidentCount: { $sum: 1 },
-          avgSeverity: { $avg: "$severity" }
-        }
-      }
-    ]);
+ 
+    const zones = await zoneService.getZoneAnalytics({ city, hours });
 
-    const zoneMap = {};
+    const alerts = zones
+      .filter(z => z.alertLevel === "CRITICAL" || z.alertLevel === "HIGH")
+      .map(z => ({
+        zone: z.zone,
+        alertLevel: z.alertLevel,
+        message: `Emergency surge detected in ${z.zone}`
+      }));
 
-    zoneData.forEach(z => {
-      zoneMap[z._id] = {
-        zone: z._id,
-        ambulanceCount: z.ambulanceCount,
-        accidentCount: 0,
-        avgSeverity: 0
-      };
+    const io = req.app.get("io");
+    if (io && alerts.length > 0) {
+      io.emit("zoneAlert", alerts);
+    }
+
+    res.json({
+      city,
+      timestamp: new Date(),
+      zones,
+      alerts
     });
-
-    accidentData.forEach(a => {
-      if (!zoneMap[a._id]) {
-        zoneMap[a._id] = {
-          zone: a._id,
-          ambulanceCount: 0
-        };
-      }
-
-      zoneMap[a._id].accidentCount = a.accidentCount;
-      zoneMap[a._id].avgSeverity = Number(a.avgSeverity?.toFixed(2) || 0);
-    });
-
-    const result = Object.values(zoneMap).map(z => {
-      const zoneRiskScore =
-        (z.accidentCount || 0) * 2 +
-        (z.ambulanceCount || 0) * 1.5 +
-        (z.avgSeverity || 0) * 3;
-
-      let alertLevel = "LOW";
-      if (zoneRiskScore > 50) alertLevel = "CRITICAL";
-      else if (zoneRiskScore > 30) alertLevel = "HIGH";
-      else if (zoneRiskScore > 15) alertLevel = "MEDIUM";
-
-      return {
-        ...z,
-        zoneRiskScore: Math.round(zoneRiskScore),
-        alertLevel
-      };
-    });
-
-    res.json(result.sort((a, b) => b.zoneRiskScore - a.zoneRiskScore));
 
   } catch (err) {
-    res.status(500).json({ message: "Zone analytics failed" });
+    console.error("Zone analytics error:", err);
+    res.status(500).json({
+      message: err.message || "Zone analytics failed"
+    });
   }
 };

@@ -6,24 +6,26 @@ exports.getAccidentHotspots = async (req, res, next) => {
 
     const since = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-    const hotspots = await Accident.aggregate([
-      {
-        $match: {
-          date: { $gte: since }
-        }
+   const hotspots = await Accident.aggregate([
+  {
+    $geoNear: {
+      near: { type: "Point", coordinates: [77.21, 28.61] },
+      distanceField: "distance",
+      spherical: true
+    }
+  },
+  {
+    $group: {
+      _id: {
+        lat: { $round: [{ $arrayElemAt: ["$location.coordinates", 1] }, 2] },
+        lng: { $round: [{ $arrayElemAt: ["$location.coordinates", 0] }, 2] }
       },
-      {
-        $group: {
-          _id: "$location.coordinates",
-          accidentCount: { $sum: 1 },
-          avgSeverity: { $avg: "$severity" },
-          zone: { $first: "$zone" }
-        }
-      },
-      {
-        $sort: { accidentCount: -1 }
-      }
-    ]);
+      accidentCount: { $sum: 1 },
+      avgSeverity: { $avg: "$severity" }
+    }
+  }
+]);
+
 
     const geoJSON = {
       type: "FeatureCollection",

@@ -6,7 +6,11 @@ const ambulanceLogSchema = new mongoose.Schema({
     ref: "Hospital"
   },
   zone: String,
+  city: String,
   arrivalTime: Date
 });
+
+ambulanceLogSchema.index({ arrivalTime: -1 });
+ambulanceLogSchema.index({ zone: 1 });
 
 module.exports = mongoose.model("AmbulanceLog", ambulanceLogSchema);
