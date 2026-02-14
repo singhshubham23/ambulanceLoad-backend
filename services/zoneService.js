@@ -1,41 +1,24 @@
+
 const AmbulanceLog = require("../models/AmbulanceLog");
 const Accident = require("../models/Accident");
 const predictionService = require("./predictionService");
 
 exports.getZoneAnalytics = async ({ city, hours = 24 }) => {
-  if (!city) {
-    throw new Error("City is required");
-  }
+  if (!city) throw new Error("City is required");
 
   const parsedHours = Number(hours);
-  if (isNaN(parsedHours) || parsedHours <= 0) {
+  if (isNaN(parsedHours) || parsedHours <= 0)
     throw new Error("Invalid hours parameter");
-  }
 
   const lastTime = new Date(Date.now() - parsedHours * 60 * 60 * 1000);
 
   const zoneData = await AmbulanceLog.aggregate([
-    {
-      $match: {
-        city,
-        arrivalTime: { $gte: lastTime }
-      }
-    },
-    {
-      $group: {
-        _id: "$zone",
-        ambulanceCount: { $sum: 1 }
-      }
-    }
+    { $match: { city, arrivalTime: { $gte: lastTime } } },
+    { $group: { _id: "$zone", ambulanceCount: { $sum: 1 } } }
   ]);
 
   const accidentData = await Accident.aggregate([
-    {
-      $match: {
-        city,
-        date: { $gte: lastTime }
-      }
-    },
+    { $match: { city, date: { $gte: lastTime } } },
     {
       $group: {
         _id: "$zone",
@@ -46,38 +29,30 @@ exports.getZoneAnalytics = async ({ city, hours = 24 }) => {
   ]);
 
   const zoneMap = {};
-
-  zoneData.forEach(z => {
+  zoneData.forEach(z =>
     zoneMap[z._id] = {
       zone: z._id,
       ambulanceCount: z.ambulanceCount,
       accidentCount: 0,
       avgSeverity: 0
-    };
-  });
+    });
 
   accidentData.forEach(a => {
-    if (!zoneMap[a._id]) {
-      zoneMap[a._id] = {
-        zone: a._id,
-        ambulanceCount: 0,
-        accidentCount: 0,
-        avgSeverity: 0
-      };
-    }
-
+    if (!zoneMap[a._id]) zoneMap[a._id] = {
+      zone: a._id,
+      ambulanceCount: 0,
+      accidentCount: 0,
+      avgSeverity: 0
+    };
     zoneMap[a._id].accidentCount = a.accidentCount;
-    zoneMap[a._id].avgSeverity = Number(a.avgSeverity?.toFixed(2) || 0);
+    zoneMap[a._id].avgSeverity = Number(a.avgSeverity?.toFixed(2) ?? 0);
   });
 
-  const zones = [];
 
   const mlPrediction = await predictionService.calculateMLPrediction();
+  const dynamicWeight = mlPrediction.predictedAccidents * 0.5;
 
-  for (const z of Object.values(zoneMap)) {
-
-    const dynamicWeight = mlPrediction.predictedAccidents * 0.5;
-
+  const zones = Object.values(zoneMap).map(z => {
     const zoneRiskScore =
       (z.accidentCount || 0) * 2 +
       (z.ambulanceCount || 0) * 1.5 +
@@ -89,12 +64,12 @@ exports.getZoneAnalytics = async ({ city, hours = 24 }) => {
     else if (zoneRiskScore > 40) alertLevel = "HIGH";
     else if (zoneRiskScore > 20) alertLevel = "MEDIUM";
 
-    zones.push({
+    return {
       ...z,
       zoneRiskScore: Math.round(zoneRiskScore),
       alertLevel
-    });
-  }
+    };
+  });
 
   return zones.sort((a, b) => b.zoneRiskScore - a.zoneRiskScore);
 };
