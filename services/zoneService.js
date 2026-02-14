@@ -72,9 +72,9 @@ exports.getZoneAnalytics = async ({ city, hours = 24 }) => {
 
   const zones = [];
 
-  for (const z of Object.values(zoneMap)) {
+  const mlPrediction = await predictionService.calculateMLPrediction();
 
-    const mlPrediction = await predictionService.calculateMLPrediction();
+  for (const z of Object.values(zoneMap)) {
 
     const dynamicWeight = mlPrediction.predictedAccidents * 0.5;
 

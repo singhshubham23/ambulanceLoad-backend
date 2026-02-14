@@ -1,48 +1,65 @@
 const mongoose = require("mongoose");
 
-const accidentSchema = new mongoose.Schema({
-  location: {
-    type: {
+const accidentSchema = new mongoose.Schema(
+  {
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+        required: true
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+        validate: {
+          validator: function (value) {
+            return value.length === 2;
+          },
+          message: "Coordinates must be [longitude, latitude]"
+        }
+      }
+    },
+
+    city: {
       type: String,
-      enum: ["Point"],
-      default: "Point",
       required: true,
+      trim: true,
+      index: true
     },
-    coordinates: {
-      type: [Number],
+
+    severity: {
+      type: Number,
       required: true,
+      min: 1,
+      max: 5
     },
-  },
 
-  city: {
-    type: String,
-    required: true,
-  },
+    zone: {
+      type: String,
+      required: true,
+      trim: true
+    },
 
-  severity: {
-    type: Number,
-    min: 1,
-    max: 5,
-    required: true,
-  },
+    hospital: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hospital"
+    },
 
-  zone: {
-    type: String,
-    required: true,
+    date: {
+      type: Date,
+      default: Date.now,
+      index: true
+    }
   },
+  {
+    timestamps: true
+  }
+);
 
-  hospital: {
-    type: String,
-  },
-
-  date: {
-    type: Date,
-    default: Date.now,
-  },
-});
 
 accidentSchema.index({ location: "2dsphere" });
-accidentSchema.index({ date: -1 });
-accidentSchema.index({ zone: 1 });
+accidentSchema.index({ city: 1, date: -1 });
+accidentSchema.index({ city: 1, zone: 1 });
 
 module.exports = mongoose.model("Accident", accidentSchema);

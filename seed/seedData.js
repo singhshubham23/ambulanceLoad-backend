@@ -1,10 +1,11 @@
+// seed/seedData.js
+
 const mongoose = require("mongoose");
 require("dotenv").config();
 
 const Accident = require("../models/Accident");
 const AmbulanceLog = require("../models/AmbulanceLog");
 const Hospital = require("../models/Hospital");
-const Festival = require("../models/Festival");
 
 const connectDB = async () => {
   await mongoose.connect(process.env.MONGO_URI);
@@ -18,44 +19,50 @@ const seed = async () => {
     await Accident.deleteMany();
     await AmbulanceLog.deleteMany();
     await Hospital.deleteMany();
-    await Festival.deleteMany();
 
     const hospitals = await Hospital.insertMany([
-      { name: "City Hospital", zone: "North", capacity: 120 },
-      { name: "Metro Hospital", zone: "South", capacity: 80 },
-      { name: "Govt Medical College", zone: "Central", capacity: 200 },
+      { name: "City Hospital", zone: "North", city: "Delhi", capacity: 120 },
+      { name: "Metro Hospital", zone: "South", city: "Delhi", capacity: 80 },
+      { name: "Govt Medical College", zone: "Central", city: "Delhi", capacity: 200 }
     ]);
 
     await Accident.insertMany([
       {
         location: {
           type: "Point",
-          coordinates: [77.21, 28.61],
+          coordinates: [77.21, 28.61] // [lng, lat]
         },
+        city: "Delhi",
         severity: 4,
         zone: "North",
+        hospital: hospitals[0]._id
       },
       {
         location: {
           type: "Point",
-          coordinates: [77.2, 28.62],
+          coordinates: [77.20, 28.62]
         },
+        city: "Delhi",
         severity: 3,
         zone: "South",
-      },
-    ]);
-    await AmbulanceLog.insertMany([
-      { hospital: hospitals[0]._id, zone: "North", arrivalTime: new Date() },
-      { hospital: hospitals[1]._id, zone: "South", arrivalTime: new Date() },
-      { hospital: hospitals[0]._id, zone: "North", arrivalTime: new Date() },
+        hospital: hospitals[1]._id
+      }
     ]);
 
-    await Festival.create({
-      name: "Diwali",
-      startDate: new Date(Date.now() - 86400000),
-      endDate: new Date(Date.now() + 86400000),
-      riskMultiplier: 1.5,
-    });
+    await AmbulanceLog.insertMany([
+      {
+        hospital: hospitals[0]._id,
+        zone: "North",
+        city: "Delhi",
+        arrivalTime: new Date()
+      },
+      {
+        hospital: hospitals[1]._id,
+        zone: "South",
+        city: "Delhi",
+        arrivalTime: new Date()
+      }
+    ]);
 
     console.log("Dummy data seeded successfully");
     process.exit();
