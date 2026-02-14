@@ -1,4 +1,3 @@
-// services/zoneService.js
 const AmbulanceLog = require("../models/AmbulanceLog");
 const Accident = require("../models/Accident");
 const predictionService = require("./predictionService");
